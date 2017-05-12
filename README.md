@@ -1,39 +1,26 @@
 # Meander
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/meander`. To experiment with that code, run `bin/console` for an interactive prompt.
+[![Build Status](https://travis-ci.org/bombazook/meander.svg?branch=master)](https://travis-ci.org/bombazook/meander)
+[![Gem Version](https://badge.fury.io/rb/meander.svg)](https://badge.fury.io/rb/meander)
 
-TODO: Delete this and the text above, and describe your gem
+## WAT
+Just another ruby Hash extension
 
-## Installation
+Hashie clone with a bit more sugar
 
-Add this line to your application's Gemfile:
+Best for configuration storage
 
-```ruby
-gem 'meander'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install meander
+Natively supports:
+- default values
+- key-based accessor methods
+- block-based dsl-like value access
+- stores updates in separate hash
+- performs well with Hashie deep_merge extension
 
 ## Usage
+[Meander::Plain](http://www.rubydoc.info/gems/meander/Meander/Plain)
 
-TODO: Write usage instructions here
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/meander.
-
+[Meander::Mutable](http://www.rubydoc.info/gems/meander/Meander/Mutable)
 
 ## License
 

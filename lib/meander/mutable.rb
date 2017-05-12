@@ -39,16 +39,19 @@ module Meander
   #   m.a # => 3  # Value is up to date
   #   m.b # => 2  # Attention! Value remains unchanged
   class Mutable < Delegator
-    class MutableProxy < Plain # :nodoc:
-      self.cover_class = Mutable
-    end
-
     include CommonMethods
+
+    def self.own_keys_cover_class
+      klass = self
+      @own_keys_cover_class ||= Class.new(Plain) do
+        self.cover_class = klass
+      end
+    end
 
     def initialize(obj = {})
       super
       @delegate_sd_obj = obj
-      @own_keys = MutableProxy.new
+      @own_keys = self.class.own_keys_cover_class.new
     end
 
     def __getobj__
@@ -67,6 +70,10 @@ module Meander
         end
     end
 
+    def is_a?(klass)
+      klass.ancestors.include?(Hash) || super
+    end
+
     def keys
       origin = __getobj__
       own = @own_keys
@@ -80,8 +87,8 @@ module Meander
         val = @own_keys[key]
       else
         val = get_delegated_value key
-        if val.is_a?(Hash) || val.is_a?(Mutable)
-          val = Mutable.new(val)
+        if val.is_a?(Hash)
+          val = self.class.new(val)
           self[key] = val
         end
       end

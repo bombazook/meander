@@ -70,6 +70,12 @@ module Meander
         end
     end
 
+    def dup
+      inst = super
+      inst.instance_variable_set :@own_keys, @own_keys.dup
+      inst
+    end
+
     def is_a?(klass)
       klass.ancestors.include?(Hash) || super
     end

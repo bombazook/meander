@@ -8,7 +8,7 @@ end
 RSpec.describe HashieDeepMergeSupport do
   it_behaves_like 'common meander' do
     it_behaves_like 'mutable meander' do
-      it_behaves_like 'support deep_merge support'
+      it_behaves_like 'support deep_merge'
     end
   end
 end

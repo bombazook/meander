@@ -40,6 +40,7 @@ module Meander
   #   m.b # => 2  # Attention! Value remains unchanged
   class Mutable < Delegator
     include CommonMethods
+    include Enumerable
 
     def self.own_keys_cover_class
       klass = self
@@ -71,13 +72,16 @@ module Meander
     end
 
     def dup
-      inst = super
-      inst.instance_variable_set :@own_keys, @own_keys.dup
-      inst
+      self.class.new(self)
     end
 
-    def is_a?(klass)
-      klass.ancestors.include?(Hash) || super
+    def each &block
+      if block_given?
+        __getobj__.each{ |i| yield i }
+        @own_keys.each{ |i| yield i }
+      else
+        enum_for :each
+      end
     end
 
     def keys
@@ -117,7 +121,7 @@ module Meander
     end
 
     extend Forwardable
-    def_delegator :@own_keys, :[]=
+    def_delegators :@own_keys, :[]=, :is_a?
 
     private
 

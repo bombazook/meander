@@ -64,6 +64,7 @@ RSpec.shared_examples 'common meander' do
 
     context 'nil argument' do
       let(:original_hash) { nil }
+      let(:original_config) { described_class.new(original_hash) }
 
       it 'creates object with empty keys list' do
         expect(original_config.keys).to be_empty

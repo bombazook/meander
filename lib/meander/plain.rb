@@ -1,5 +1,5 @@
 require 'thor/core_ext/hash_with_indifferent_access'
-
+require_relative 'common_methods'
 module Meander
   ##
   # == Brief

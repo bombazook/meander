@@ -1,4 +1,4 @@
-require 'meander/plain'
+require_relative 'plain'
 require 'delegate'
 require 'forwardable'
 
@@ -49,18 +49,28 @@ module Meander
       end
     end
 
-    def initialize(obj = {})
-      super
-      @delegate_sd_obj = obj
+    def initialize(required = {}, *args, &block)
+      __setobj__(required, *args)
       @own_keys = self.class.own_keys_cover_class.new
     end
 
     def __getobj__
+      if @delegate_sd_obj.size == 1
+        @delegate_sd_obj[0]
+      else
+        @delegate_sd_obj.inject &:merge
+      end
+    end
+
+    def __setobj__(*args)
+      @delegate_sd_obj = []
+      @delegate_sd_obj += args
       @delegate_sd_obj
     end
 
-    def __setobj__(obj)
-      @delegate_sd_obj = obj
+    def merge!(hsh)
+      @delegate_sd_obj ||= []
+      @delegate_sd_obj << hsh
     end
 
     def key?(key)

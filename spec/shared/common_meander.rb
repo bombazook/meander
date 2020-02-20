@@ -34,7 +34,6 @@ RSpec.shared_examples 'common meander' do
     end
 
     it 'behaves like hash_with_indifferent_access' do
-      original_config
       expect(original_config['x']).to be(1)
     end
 
@@ -46,7 +45,7 @@ RSpec.shared_examples 'common meander' do
     context 'true-false values' do
       let(:original_hash) { { x: true } }
 
-      it 'does change value even if it doesnt true in boolean expression' do
+      it 'changes value even if it doesnt true in boolean expression' do
         config_copy[:x] = false
         expect(config_copy.x).to be_eql(false)
       end

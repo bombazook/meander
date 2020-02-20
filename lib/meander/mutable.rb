@@ -1,7 +1,8 @@
+# frozen_string_literal: true
+
 require_relative 'plain'
 require 'delegate'
 require 'forwardable'
-
 module Meander
   ##
   # This class is a mutable version of Meander::Plain
@@ -49,56 +50,56 @@ module Meander
       end
     end
 
-    def initialize(required = {}, *args, &block)
+    def initialize(required = {}, *args)
       __setobj__(required, *args)
       @own_keys = self.class.own_keys_cover_class.new
     end
 
     def __getobj__
-      if @delegate_sd_obj.size == 1
-        @delegate_sd_obj[0]
+      if @delegate.size == 1
+        @delegate[0]
       else
-        @delegate_sd_obj.inject &:merge
+        @delegate.inject &:merge
       end
     end
 
     def __setobj__(*args)
-      @delegate_sd_obj = []
-      @delegate_sd_obj += args
-      @delegate_sd_obj
+      @delegate = []
+      @delegate += args
+      @delegate
     end
 
     def merge!(hsh)
-      @delegate_sd_obj ||= []
-      @delegate_sd_obj << hsh
+      @delegate ||= []
+      @delegate << hsh
     end
 
     def key?(key)
-      @own_keys.key?(key) ||
-        begin
-          obj = __getobj__
-          obj.key?(key.to_s) || obj.key?(key.to_sym)
-        end
+      if key.respond_to?(:to_s)
+        k = key.to_s
+        deep_call.any? { |i| i.keys.map(&:to_s).include?(k) }
+      else
+        deep_call.any? { |i| i.keys.include?(key) }
+      end
     end
 
     def dup
       self.class.new(self)
     end
 
-    def each &block
+    def each
       if block_given?
-        __getobj__.each{ |i| yield i }
-        @own_keys.each{ |i| yield i }
+        __getobj__.each { |i| yield i }
+        @own_keys.each { |i| yield i }
       else
         enum_for :each
       end
     end
 
     def keys
-      origin = __getobj__
-      own = @own_keys
-      [(origin && origin.keys), (own && own.keys)].flatten
-                                                  .compact.map(&:to_s).uniq
+      origin = self
+      keys_array = deep_call.map(&:keys)
+      keys_array.flatten.compact.map(&:to_s).uniq
     end
 
     def [](key)
@@ -106,7 +107,7 @@ module Meander
       if @own_keys.key? key
         val = @own_keys[key]
       else
-        val = get_delegated_value key
+        val = get_delegated_value(key)
         if val.is_a?(Hash)
           val = self.class.new(val)
           self[key] = val
@@ -122,9 +123,9 @@ module Meander
     def method_missing(method, *args, &block)
       if @own_keys.respond_to?(method) || block_given?
         @own_keys.send method, *args, &block
-      elsif delegated_key? method
-        define_getter method
-        send method, *args, &block
+      elsif delegated_key?(method)
+        define_getter(method)
+        send(method, *args, &block)
       else
         super
       end
@@ -135,19 +136,39 @@ module Meander
 
     private
 
+    def convert_key(key)
+      key.is_a?(Symbol) ? key.to_s : key
+    end
+
+    def deep_call(from: self)
+      origin = from
+      Enumerator.new do |yielder|
+        while origin
+          own_keys = origin.instance_variable_get(:@own_keys)
+          if own_keys
+            yielder.yield own_keys
+            origin = origin.__getobj__
+          else
+            yielder.yield origin
+            origin = nil
+          end
+        end
+      end
+    end
+
     def delegated_key?(key)
-      __getobj__.keys.map(&:to_s).include? key.to_s
+      deep_call(from: __getobj__).any? do |i|
+        i.keys.map(&:to_s).include?(key.to_s)
+      end
     end
 
     def get_delegated_value(key)
-      delegated = __getobj__
-      if key.respond_to?(:to_s) && delegated.key?(key.to_s)
-        delegated[key.to_s]
-      elsif key.respond_to?(:to_sym) && delegated.key?(key.to_sym)
-        delegated[key.to_sym]
-      else
-        delegated[key]
+      value = nil
+      key = convert_key(key)
+      deep_call(from: __getobj__).detect do |i|
+        i.keys.any?{|k| convert_key(k) == key && value = i[k]}
       end
+      value
     end
   end
 end

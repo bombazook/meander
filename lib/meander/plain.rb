@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'thor/core_ext/hash_with_indifferent_access'
 require_relative 'common_methods'
 module Meander
@@ -5,7 +7,7 @@ module Meander
   # == Brief
   # This class is a sugar filled version of HashWithIndifferentAccess
   #
-  # It supports key-based method calling and value block evaluation
+  # It supports key-based method_name calling and value block evaluation
   # == Configuration
   # You can set class that will be applied to newly assigned values
   #   require 'active_support/core_ext/hash'
@@ -17,7 +19,7 @@ module Meander
   #   m[:a] = {}
   #   m[:a].class # => ActiveSupport::HashWithIndifferentAccess
   # == Usage
-  # === Key based method evaluation
+  # === Key based method_name evaluation
   #   m = Meander::Plain.new({:a => 1})
   #   m.a # => 1
   # === New value assignment
@@ -46,26 +48,25 @@ module Meander
       end
     end
 
-    def method_missing(method, *args, &block)
-      method = method.to_s
-      if new_key_method? method
-        key_name = method.gsub(/\=$/, '')
+    def method_missing(method_name, *args, &block)
+      method_name = method_name.to_s
+      if new_key_method? method_name
+        key_name = method_name.gsub(/=$/, '')
         send :[]=, key_name, *args, &block
       elsif block_given?
-        val = self[method]
+        val = self[method_name]
         val = {} unless self.class.hash_or_cover_class?(val)
-        send :[]=, method, val
-        yield(self[method])
-      elsif key?(method)
-        define_getter(method)
-        send method, &block
+        send :[]=, method_name, val
+        yield(self[method_name])
+      elsif key?(method_name)
+        self[method_name]
       else
         super
       end
     end
 
-    def respond_to_missing?(method, include_private = false)
-      new_key_method?(method) || key?(method) || super
+    def respond_to_missing?(method_name, include_private = false)
+      new_key_method?(method_name) || key?(method_name) || super
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Meander
   module CommonMethods # :nodoc:
     module ClassMethods # :nodoc:
@@ -8,10 +10,8 @@ module Meander
 
     def self.included(base)
       base.extend ClassMethods
-      base.instance_eval do
-        def cover_class=(val)
-          @cover_class = val
-        end
+      class << base
+        attr_writer :cover_class
 
         def cover_class
           @cover_class ||= self
@@ -21,22 +21,8 @@ module Meander
 
     private
 
-    def define_getter(method)
-      define_singleton_method method do |&b|
-        if key?(method)
-          b.call(self[method]) if block_given?
-          self[method]
-        else
-          instance_eval(method) do |name|
-            undef_method name
-          end
-          send method, &block
-        end
-      end
-    end
-
-    def new_key_method?(method)
-      method =~ /^([[:word:]]+)\=$/
+    def new_key_method?(method_name)
+      /=$/.match?(method_name)
     end
   end
 end

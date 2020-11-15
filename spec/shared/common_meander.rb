@@ -99,6 +99,11 @@ RSpec.shared_examples 'common meander' do
       expect(original_config.z.x).to be_eql 1
     end
 
+    it 'calls original method_missing if no values set' do
+      expect(original_config).to receive(:[])
+      original_config.non_exist
+    end
+
     context 'original key already has some value' do
       it 'overrides this value' do
         original_config.x { |x| x.x = 1 }

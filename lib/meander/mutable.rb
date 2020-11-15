@@ -30,7 +30,7 @@ module Meander
   #   a[:a][:b][:c] = 3
   #   m.a.b.c     # => 3
   # ==== Notice
-  # Meander::Mutable support only one up to date object reference
+  # Meander::Mutable support multiple object references
   #   a = {a: 1}
   #   m = Meander::Mutable.new(a)
   #   b = {b: 2}
@@ -38,8 +38,16 @@ module Meander
   #   a[:a] = 3
   #   b[:b] = 4
   #   m.a # => 3  # Value is up to date
-  #   m.b # => 2  # Attention! Value remains unchanged
-  class Mutable < Delegator
+  #   m.b # => 4  # This value is also up to date
+  # You can also initialize Meander::Mutable with multiple nested hashes
+  #   a = {a: 1}
+  #   b = {b: 2}
+  #   m = Meander::Mutable.new(a, b)
+  #   a[:a] = 3
+  #   b[:b] = 4
+  #   m.a # => 3  # Value is up to date
+  #   m.b # => 4  # This value is also up to date
+  class Mutable < ::Thor::CoreExt::HashWithIndifferentAccess
     include CommonMethods
     include Enumerable
 
@@ -56,11 +64,7 @@ module Meander
     end
 
     def __getobj__
-      if @delegate.size == 1
-        @delegate[0]
-      else
-        @delegate.inject &:merge
-      end
+      @delegate
     end
 
     def __setobj__(*args)
@@ -71,35 +75,25 @@ module Meander
 
     def merge!(hsh)
       @delegate ||= []
-      @delegate << hsh
+      @delegate.unshift hsh
     end
 
     def key?(key)
-      if key.respond_to?(:to_s)
-        k = key.to_s
-        deep_call.any? { |i| i.keys.map(&:to_s).include?(k) }
-      else
-        deep_call.any? { |i| i.keys.include?(key) }
-      end
+      @own_keys.key?(key) || delegated_key?(key)
     end
 
     def dup
-      self.class.new(self)
+      self.class.new(*__getobj__)
     end
 
-    def each
-      if block_given?
-        __getobj__.each { |i| yield i }
-        @own_keys.each { |i| yield i }
-      else
-        enum_for :each
-      end
+    def each(*args, &block)
+      return enum_for(:each) unless block_given?
+
+      deep_call.each { |i| i.each(*args, &block) }
     end
 
     def keys
-      origin = self
-      keys_array = deep_call.map(&:keys)
-      keys_array.flatten.compact.map(&:to_s).uniq
+      map { |k, _| convert_key(k) }
     end
 
     def [](key)
@@ -116,57 +110,65 @@ module Meander
       val
     end
 
-    def respond_to_missing?(method, include_private = false)
-      @own_keys.respond_to?(method) || delegated_key?(method.to_s) || super
+    def respond_to_missing?(method_name, include_private = false)
+      @own_keys.respond_to?(method_name) || delegated_key?(method_name) || super
     end
 
-    def method_missing(method, *args, &block)
-      if @own_keys.respond_to?(method) || block_given?
-        @own_keys.send method, *args, &block
-      elsif delegated_key?(method)
-        define_getter(method)
-        send(method, *args, &block)
+    def method_missing(method_name, *args, &block)
+      if @own_keys.respond_to?(method_name) || block_given?
+        @own_keys.send method_name, *args, &block
+      elsif delegated_key?(method_name)
+        self[method_name]
       else
         super
       end
     end
 
+    def kind_of?(klass)
+      (self.class.cover_class == klass) || __getobj__.all?(klass)
+    end
+
+    alias is_a? kind_of?
+
     extend Forwardable
-    def_delegators :@own_keys, :[]=, :is_a?
+    def_delegators :@own_keys, :[]=
 
     private
 
-    def convert_key(key)
-      key.is_a?(Symbol) ? key.to_s : key
-    end
-
-    def deep_call(from: self)
-      origin = from
+    def deep_call(origin: self)
+      stack = []
+      if origin.is_a?(Array)
+        stack.unshift(*origin)
+        origin = stack.pop
+      end
       Enumerator.new do |yielder|
         while origin
           own_keys = origin.instance_variable_get(:@own_keys)
           if own_keys
             yielder.yield own_keys
-            origin = origin.__getobj__
+            stack.unshift(*origin.__getobj__)
+            origin = stack.pop
           else
             yielder.yield origin
-            origin = nil
+            origin = stack.empty? ? nil : stack.pop
           end
         end
+        self
       end
     end
 
     def delegated_key?(key)
-      deep_call(from: __getobj__).any? do |i|
-        i.keys.map(&:to_s).include?(key.to_s)
+      key = convert_key(key)
+      deep_call(origin: __getobj__).any? do |i|
+        i.keys.any? { |k| convert_key(k) == key }
       end
     end
 
     def get_delegated_value(key)
       value = nil
       key = convert_key(key)
-      deep_call(from: __getobj__).detect do |i|
-        i.keys.any?{|k| convert_key(k) == key && value = i[k]}
+      deep_call(origin: __getobj__).detect do |i|
+        i.keys.any? { |k| convert_key(k) == key && value = i[k] }
       end
       value
     end

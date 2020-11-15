@@ -1,8 +1,8 @@
 require 'spec_helper'
-require 'hashie/extensions/deep_merge'
+require 'hashie'
 
 class HashieDeepMergeSupport < Meander::Mutable
-  include Hashie::Extensions::DeepMerge
+  include ::Hashie::Extensions::DeepMerge
 end
 
 RSpec.describe HashieDeepMergeSupport do

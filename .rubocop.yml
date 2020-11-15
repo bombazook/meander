@@ -1,11 +1,15 @@
-require: rubocop-rspec
+require:
+  - rubocop-rspec
+  - rubocop-performance
 AllCops:
   RSpec:
     Patterns:
     - 'spec/meander/.+.rb$'
     - 'spec/shared/.+.rb$'
 Metrics/MethodLength:
-  Max: 15
+  Max: 20
+Metrics/ClassLength:
+  Max: 110
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*.rb'

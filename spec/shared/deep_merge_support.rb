@@ -2,7 +2,7 @@ shared_examples 'support deep_merge' do
   let(:original_hash) { { x: { y: { z: 1 } } } }
 
   shared_examples 'common deep_merge' do
-    it 'addes new key to subhash' do
+    it 'adds new key to subhash' do
       expect(merged_config.x.y.yo).to be_eql(2)
     end
 
@@ -29,7 +29,6 @@ shared_examples 'support deep_merge' do
 
   context 'internal merge' do
     let(:merged_config) { original_config.deep_merge!(x: { y: { yo: 2 } }) }
-
     it_behaves_like 'common deep_merge'
   end
 

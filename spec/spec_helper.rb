@@ -1,14 +1,16 @@
+# frozen_string_literal: true
+
 require 'bundler/setup'
 require 'simplecov'
 
 SimpleCov.start do
-  add_filter "/spec/"
+  add_filter '/spec/'
 end
 
 require 'meander'
 require 'byebug'
 
-Dir[File.join(__dir__, 'shared/**/*.rb')].each { |entry| require entry }
+Dir[File.join(__dir__, 'shared/**/*.rb')].sort.each { |entry| require entry }
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

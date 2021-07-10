@@ -19,7 +19,18 @@ module Meander
       end
     end
 
-    private
+    protected
+
+    def convert_key(key)
+      case key
+      when Symbol
+        key.to_s
+      when String
+        key
+      else
+        "_#{key}"
+      end
+    end
 
     def new_key_method?(method_name)
       /=$/.match?(method_name)

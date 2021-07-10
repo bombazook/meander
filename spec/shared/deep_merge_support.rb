@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 shared_examples 'support deep_merge' do
   let(:original_hash) { { x: { y: { z: 1 } } } }
 
@@ -29,6 +31,7 @@ shared_examples 'support deep_merge' do
 
   context 'internal merge' do
     let(:merged_config) { original_config.deep_merge!(x: { y: { yo: 2 } }) }
+
     it_behaves_like 'common deep_merge'
   end
 

@@ -1,31 +1,33 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples 'common meander' do
   let(:original_hash) { { x: 1 } }
   let(:original_config) { described_class.new(original_hash) }
   let(:config_copy) { described_class.new(original_config) }
 
   describe '#merge!' do
-    it 'doesnt change original hash values' do
-      config_copy.merge! :x => 2, 'test' => 3
+    it 'doesn\'t change original hash values' do
+      config_copy.merge! :x => 2, 'toast' => 3
       expect(original_config[:x]).to be_eql(1)
     end
 
-    it 'doesnt set new values to original hash' do
-      config_copy.merge! :x => 2, 'test' => 3
-      expect(original_config['test']).to be_nil
+    it 'doesn\'t set new values to original hash' do
+      config_copy.merge! :x => 2, 'toast' => 3
+      expect(original_config['toast']).to be_nil
     end
   end
 
   describe '#[]= and #[]' do
-    it 'doesnt change original hash values' do
-      config_copy['test'] = 2
+    it 'doesn\'t change original hash values' do
+      config_copy['toast'] = 2
       config_copy[:x] = 3
       expect(original_config[:x]).to be_eql(1)
     end
 
-    it 'doesnt set new values to original hash' do
-      config_copy['test'] = 2
+    it 'doesn\'t set new values to original hash' do
+      config_copy['toast'] = 2
       config_copy[:x] = 3
-      expect(original_config['test']).to be_nil
+      expect(original_config['toast']).to be_nil
     end
 
     it 'covers child hash by cover_class' do
@@ -45,7 +47,7 @@ RSpec.shared_examples 'common meander' do
     context 'true-false values' do
       let(:original_hash) { { x: true } }
 
-      it 'changes value even if it doesnt true in boolean expression' do
+      it 'changes value even if it doesn\'t true in boolean expression' do
         config_copy[:x] = false
         expect(config_copy.x).to be_eql(false)
       end
@@ -61,7 +63,7 @@ RSpec.shared_examples 'common meander' do
       end
     end
 
-    context 'nil argument' do
+    context 'with nil argument' do
       let(:original_hash) { nil }
       let(:original_config) { described_class.new(original_hash) }
 
@@ -72,13 +74,13 @@ RSpec.shared_examples 'common meander' do
   end
 
   describe '#method_missing' do
-    it 'doesnt change original hash values' do
+    it 'doesn\'t change original hash values' do
       config_copy.x = 2
       config_copy.y = 1
       expect(original_config[:x]).to be_eql(1)
     end
 
-    it 'doesnt set new values to original hash' do
+    it 'doesn\'t set new values to original hash' do
       config_copy.x = 2
       config_copy.y = 1
       expect(original_config[:y]).to be_nil
@@ -88,10 +90,19 @@ RSpec.shared_examples 'common meander' do
       expect(original_config.x).to be_eql 1
     end
 
-    it 'doesnt create method with _some_name_= key' do
-      original_config[:z=] = 3
+    it 'doesn\'t create method with _some_name_= key' do
+      begin
+        original_config[:z=] = 3
+      rescue NameError
+      end
       original_config.z = 4
-      expect(original_config.z).to be_eql(4)
+      expect(original_config.keys).not_to include('z=')
+    end
+
+    it 'raise NameError on []= method with _some_name_= key' do
+      expect do
+        original_config[:z=] = 3
+      end.to raise_error(NameError)
     end
 
     it 'creates new value if block given' do
@@ -99,12 +110,11 @@ RSpec.shared_examples 'common meander' do
       expect(original_config.z.x).to be_eql 1
     end
 
-    it 'calls original method_missing if no values set' do
-      expect(original_config).to receive(:[])
-      original_config.non_exist
+    it 'raises NoMethodError if no values set' do
+      expect { original_config.non_exist }.to raise_error(NoMethodError)
     end
 
-    context 'original key already has some value' do
+    context 'with original key already has some value' do
       it 'overrides this value' do
         original_config.x { |x| x.x = 1 }
         expect(original_config.x.x).to be_eql 1
@@ -128,7 +138,7 @@ RSpec.shared_examples 'common meander' do
       expect(config_copy.key?(:z)).to be_eql false
     end
 
-    context 'different type keys' do
+    context 'with different type keys' do
       let(:original_hash) { { :x => 1, 'y' => 2 } }
 
       it 'true if original one had symbol key but argument is string' do

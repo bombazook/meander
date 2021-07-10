@@ -1,6 +1,6 @@
-# coding: utf-8
+# frozen_string_literal: true
 
-lib = File.expand_path('../lib', __FILE__)
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'meander/version'
 
@@ -9,6 +9,7 @@ Gem::Specification.new do |spec|
   spec.version       = Meander::VERSION
   spec.authors       = ['Kostrov Alexander']
   spec.email         = ['bombazook@gmail.com']
+  spec.required_ruby_version = '>= 2.4'
 
   spec.summary       = 'Just another ruby Hash extension'
   spec.description   = 'Hashie clone with a bit more sugar'
@@ -34,11 +35,11 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'thor'
 
   spec.add_development_dependency 'bundler'
-  spec.add_development_dependency "rake", ">= 12.3.3"
+  spec.add_development_dependency 'hashie'
+  spec.add_development_dependency 'rake', '>= 12.3.3'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rubocop'
-  spec.add_development_dependency 'rubocop-rspec'
   spec.add_development_dependency 'rubocop-performance'
-  spec.add_development_dependency 'hashie'
+  spec.add_development_dependency 'rubocop-rspec'
   spec.add_development_dependency 'simplecov'
 end

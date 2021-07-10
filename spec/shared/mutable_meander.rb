@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 shared_examples 'mutable meander' do
   describe '#[]= and #[]' do
     it 'changes higher level hash response if original one changed' do

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require 'thor/core_ext/hash_with_indifferent_access'
+require 'set'
+
 require_relative 'common_methods'
 module Meander
   ##
@@ -32,41 +33,136 @@ module Meander
   #     k.path = "some_config_path.yml"
   #   end
   #   k.config.path # => "some_config_path.yml"
-  class Plain < ::Thor::CoreExt::HashWithIndifferentAccess
+  class Plain
     include CommonMethods
+    include Enumerable
 
     def initialize(val = {})
-      val ||= {}
-      super(val)
+      raise ArgumentError if val && !self.class.hash_or_cover_class?(val)
+
+      @keys = Set.new
+      eval_keys(val) if val
     end
 
-    def []=(key, value)
-      if value.is_a?(Hash) && !value.is_a?(self.class.cover_class)
-        super(key, self.class.cover_class.new(value))
+    def keys
+      @keys.to_a
+    end
+
+    def key?(key)
+      @keys.member? convert_key(key)
+    end
+
+    def [](key)
+      key = convert_key(key)
+      if key? key
+        __send__(convert_key(key))
       else
-        super
+        nil
       end
     end
 
-    def method_missing(method_name, *args, &block)
-      method_name = method_name.to_s
+    def []=(key, value)
+      key = convert_key(key)
+      if key? key
+        __send__("#{key}=", value)
+      else
+        eval_key(key, value)
+      end
+    end
+
+    def each(&block)
+      e = Enumerator.new do |yielder|
+        @keys.each do |k|
+          yielder.yield([k, __send__(k)])
+        end
+      end
+      return e unless block_given?
+
+      e.each(&block)
+    end
+
+    def delete(key)
+      key = convert_key(key)
+      @keys.delete key
+      undef_accessors key if key.is_a? String
+    end
+
+    def merge!(other)
+      other.each do |k, v|
+        self[k] = v
+      end
+    end
+
+    def method_missing(mname, *args, &block)
+      method_name = convert_key(mname)
       if new_key_method? method_name
         key_name = method_name.gsub(/=$/, '')
-        send :[]=, key_name, *args, &block
+        send :[]=, key_name, args[0]
       elsif block_given?
-        val = self[method_name]
-        val = {} unless self.class.hash_or_cover_class?(val)
-        send :[]=, method_name, val
-        yield(self[method_name])
-      elsif key?(method_name)
-        self[method_name]
+        eval_key(method_name, &block)
       else
         super
       end
     end
 
     def respond_to_missing?(method_name, include_private = false)
-      new_key_method?(method_name) || key?(method_name) || super
+      new_key_method?(convert_key(method_name)) || super
+    end
+
+    private
+
+    def eval_keys(val)
+      val.each do |key, value|
+        eval_key(key, value)
+      end
+    end
+
+    def eval_value_object(key)
+      @keys.add key
+      value_object = self.class.cover_class.new
+      instance_variable_set "@#{key}", value_object
+      yield value_object
+      value_object
+    end
+
+    def eval_key(key, value = nil, &block)
+      key = convert_key(key)
+      @keys.add key
+      instance_variable_set "@#{key}", value
+      define_setter(key)
+      define_getter(key)
+      __send__("#{key}=", value)
+      __send__(key, &block)
+    rescue NameError => e
+      delete key
+      raise e
+    end
+
+    def define_setter(key)
+      define_singleton_method "#{key}=" do |val|
+        val = self.class.cover_class.new(val) if val.is_a? Hash
+        instance_variable_set "@#{key}", val
+      end
+    end
+
+    def define_getter(key)
+      define_singleton_method key do |&block|
+        val = instance_variable_get "@#{key}"
+        if block
+          if val.is_a?(self.class.cover_class)
+            block.call(val)
+          else
+            val = eval_value_object(key, &block)
+          end
+        end
+        val
+      end
+    end
+
+    def undef_accessors(key)
+      singleton_class.send :undef_method, key
+      singleton_class.send :undef_method, "#{key}="
+      remove_instance_variable(key)
     end
   end
 end

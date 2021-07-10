@@ -3,6 +3,7 @@
 require_relative 'plain'
 require 'delegate'
 require 'forwardable'
+require 'thor'
 module Meander
   ##
   # This class is a mutable version of Meander::Plain
